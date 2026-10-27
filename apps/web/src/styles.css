@@ -1,0 +1,165 @@
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --text: #14202b;
+  --muted: #5b6b7a;
+  --line: #d9e0e6;
+  --accent: #1f6fb2;
+  --accent-text: #ffffff;
+  --ok: #1d7a46;
+  --fail: #b3261e;
+  --wait: #9a6700;
+  font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d141b;
+    --surface: #16212c;
+    --text: #e6edf3;
+    --muted: #94a3b2;
+    --line: #2a3a49;
+    --accent: #4aa3ff;
+    --accent-text: #06121d;
+    --ok: #4cc38a;
+    --fail: #ff8a80;
+    --wait: #e3b341;
+  }
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); }
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+h1 { margin: 0; font-size: 1.6rem; }
+.eyebrow { margin: 0; color: var(--muted); font-size: 0.85rem; }
+
+.pill { padding: 4px 10px; border-radius: 999px; font-size: 0.85rem; border: 1px solid currentColor; white-space: nowrap; }
+.pill.ok { color: var(--ok); }
+.pill.wait { color: var(--wait); }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+label { font-size: 0.9rem; color: var(--muted); }
+input {
+  font: inherit;
+  font-size: 1.1rem;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+  width: 100%;
+}
+
+button {
+  font: inherit;
+  font-weight: 600;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
+  cursor: pointer;
+}
+button:disabled { opacity: 0.45; cursor: default; }
+button.ghost { background: transparent; color: var(--accent); }
+button.danger { color: var(--fail); border-color: var(--fail); padding: 6px 10px; }
+
+.note { margin: 0; color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+
+.camera {
+  display: none;
+  position: relative;
+  aspect-ratio: 3 / 4;
+  max-height: 45vh;
+  max-height: 45svh; /* 폰에서 아래 버튼·점수가 카메라와 함께 화면 안에 보이게 (영상은 cover 로 잘린다) */
+  border-radius: 18px;
+  overflow: hidden;
+  background: #000;
+}
+.camera.on { display: block; }
+.camera video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* 미리보기만 거울처럼 — 업로드 픽셀은 그대로 */
+}
+.guide {
+  position: absolute;
+  inset: 12% 18%;
+  border: 3px dashed rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.prompt h2 { margin: 0; font-size: 1.5rem; }
+.prompt.ready h2 { color: var(--ok); }
+.row { display: flex; gap: 8px; }
+.row button { flex: 1; }
+.prompt .meta { margin: 0; color: var(--muted); font-size: 0.85rem; }
+.prompt .hint { margin: 0; min-height: 1.4em; color: var(--wait); }
+
+.result h2 { margin: 0; }
+.result p { margin: 0; color: var(--muted); }
+.result.ok h2 { color: var(--ok); }
+.result.fail h2 { color: var(--fail); }
+
+button.big { font-size: 1.2rem; padding: 16px; }
+.scores { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.scores td { padding: 4px 6px; vertical-align: middle; }
+.scores td:first-child { font-weight: 600; white-space: nowrap; }
+.scores td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bar { width: 100%; height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; }
+.bar > div { height: 100%; background: var(--fail); }
+.bar.hit > div, .scores tr.hit .bar > div { background: var(--ok); }
+.nav { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.95rem; }
+.nav a { color: var(--accent); text-decoration: none; }
+.nav a[aria-current="page"] { color: var(--text); font-weight: 700; }
+.compare-head { display: flex; align-items: center; gap: 14px; }
+.compare-head p { margin: 0; color: var(--muted); }
+.thumb { width: 72px; height: 96px; object-fit: cover; border-radius: 10px; transform: scaleX(-1); /* 미리보기처럼 거울 */ }
+.result h2.score { font-size: 2.2rem; font-variant-numeric: tabular-nums; }
+.result .meta { margin: 0; color: var(--muted); font-size: 0.85rem; }
+.timing { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+
+.admin-error { margin: 0; color: var(--fail); font-size: 0.9rem; }
+.panel h2.h { margin: 0; font-size: 1.1rem; }
+.users { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.users li { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.9rem; }
+
+/* 접속 QR 카드 — 화면에서는 패널 안에, 인쇄하면 카드만 한 장씩 */
+.qr-cards { display: flex; flex-direction: column; gap: 16px; }
+.qr-card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: #fff; color: #111; }
+.qr-card h3 { margin: 0; font-size: 1rem; }
+.qr-code svg { display: block; width: min(100%, 240px); height: auto; }
+.qr-url { font-size: 0.8rem; word-break: break-all; text-align: center; color: #333; }
+@media print {
+  body { background: #fff; }
+  .app { max-width: none; padding: 0; }
+  .app > :not(.qr-print), .qr-print > :not(.qr-cards) { display: none; }
+  .qr-print { border: none; padding: 0; }
+  .qr-card { border: none; min-height: 90vh; justify-content: center; break-after: page; }
+  .qr-code svg { width: 60vw; }
+}
+
+footer { display: flex; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: 0.8rem; }

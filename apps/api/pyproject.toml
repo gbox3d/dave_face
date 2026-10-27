@@ -1,0 +1,20 @@
+[project]
+name = "dave-face"
+version = "0.1.0"
+description = "Raspberry Pi 5 + Hailo-10H 얼굴 인식 데모 API (SCRFD + ArcFace, NPU 추론)"
+requires-python = ">=3.13"
+
+# HailoRT SDK 는 /opt/hailort/5.4.0/dist 의 wheel 을 --no-deps 로 따로 설치한다 (scripts/setup-venv.sh).
+# OpenCV·NumPy·Pillow·Flask 는 시스템 패키지를 --system-site-packages 로 쓴다.
+dependencies = []
+
+[project.optional-dependencies]
+web = ["Flask>=3.1,<4", "gunicorn>=23,<24"]
+tools = ["segno>=1.6,<2"]   # scripts/print-qr.py (QR → PDF)
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["dave_face"]

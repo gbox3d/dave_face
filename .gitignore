@@ -1,0 +1,21 @@
+# 비밀·상태·생체 데이터(DB, 토큰, 사진, 로그)는 git 밖에 둔다
+localfiles/
+
+# 모델 파일은 scripts/fetch-hef.sh 로 받는다 — SHA256SUMS 만 추적
+models/**/*.hef
+models/**/*.hef.tmp
+models/**/*.onnx
+
+# Node
+node_modules/
+dist/
+
+# Python (uv)
+.venv/
+__pycache__/
+*.py[oc]
+*.egg-info/
+
+# HailoRT 가 작업 디렉터리에 남기는 로그
+hailort.log
+pyhailort.log

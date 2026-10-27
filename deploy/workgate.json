@@ -1,0 +1,39 @@
+{
+  "name": "dave-face",
+  "pm2": "dave-face",
+  "port": 3011,
+  "route": {
+    "public": "/dave-face/",
+    "upstream": "/"
+  },
+  "health": "/api/health",
+  "expect": [
+    200
+  ],
+  "version": {
+    "path": "/api/version",
+    "field": "version"
+  },
+  "checkout": "/home/goback/works/dave_face",
+  "ui": {
+    "group": "service",
+    "title": "Dave Face",
+    "eyebrow": "얼굴 인식 테스트",
+    "description": "카메라 얼굴과 등록된 얼굴들의 유사도·문턱·처리 시간을 실시간으로 보여 주는 테스트 (SCRFD + ArcFace, Hailo-10H NPU)",
+    "open": {
+      "label": "인식 테스트",
+      "href": "/dave-face/"
+    },
+    "links": [
+      {
+        "label": "사진 비교",
+        "href": "/dave-face/compare"
+      },
+      {
+        "label": "등록 (관리자)",
+        "href": "/dave-face/admin"
+      }
+    ],
+    "qr": true
+  }
+}

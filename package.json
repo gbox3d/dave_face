@@ -1,0 +1,13 @@
+{
+  "name": "dave-face",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.1.0",
+  "description": "Raspberry Pi 5 + Hailo-10H 얼굴 인식 데모 — apps/api(Python, SCRFD + ArcFace)와 apps/web(React)을 한 저장소에 둔다.",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test && pnpm test:api",
+    "test:api": "cd apps/api && .venv/bin/python -m unittest discover -s tests -v"
+  }
+}
