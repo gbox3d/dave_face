@@ -1,17 +1,19 @@
-# Dave Face Recognition System
+# Dave Face Recognition System — Jetson (`jetson` 브랜치)
 
-Raspberry Pi 5 + Hailo-10H NPU **얼굴 인식 데모**. 사진 한 장으로 얼굴을 등록하고, 카메라 프레임마다 등록된 얼굴들과의
-유사도와 처리 시간(NPU·서버·왕복)을 실시간으로 보여 준다. 라즈베리 + 헤일로 성능을 보는 용도라 인증·보안 기능은 없다.
+Jetson Orin Nano(ABP301, 4 GB) + **TensorRT GPU** 얼굴 인식 데모. `main` 브랜치는 Raspberry Pi 5 + Hailo-10H NPU 판이고, 이 브랜치는
+가속기 백엔드(`apps/api/dave_face/npu.py`)와 모델 파일·배포 경로만 바꾼 것이다. 사진 한 장으로 얼굴을 등록하고, 카메라 프레임마다
+등록된 얼굴들과의 유사도와 처리 시간(GPU·서버·왕복)을 실시간으로 보여 준다. 보드 성능을 보는 용도라 인증·보안 기능은 없다.
 
-- 파이프라인: SCRFD-10G 검출(5점) → 112×112 정렬 → ArcFace MobileFaceNet 512-D → 코사인 유사도 (Model Zoo v5.4.0 hailo10h HEF)
-- `apps/api`: Python 3.13, Flask + gunicorn, HailoRT 5.4.0 InferModel API — NPU 는 워커 스레드 하나가 쥔다
-- `apps/web`: React 19 + Vite 8 — `/` 인식 테스트, `/compare` 사진 비교, `/admin` 등록(관리자: 등록·삭제·접속 QR). 화면 위 메뉴로 오간다
-- 운영: PM2 `dave-face` · 포트 3011 · nginx `/dave-face/` · WorkGate 카드 "Dave Face"
+- 파이프라인: SCRFD-10G 검출(5점) → 112×112 정렬 → ArcFace MobileFaceNet 512-D → 코사인 유사도.
+  모델은 Hailo Model Zoo가 HEF를 컴파일한 **원본 float ONNX**(`scrfd_10g_bnkps.onnx`, `mbf.onnx`) → trtexec FP16 엔진. Pi와 같은 가중치라 NPU ↔ GPU 를 정면 비교할 수 있다.
+- `apps/api`: Python 3.10(JetPack 시스템), Flask + gunicorn, TensorRT 8.6 Python API + cuda-python 12.2 — GPU 는 워커 스레드 하나가 쥔다
+- `apps/web`: React 19 + Vite 8 — `/` 인식 테스트, `/compare` 사진 비교(데모 두 개), `/admin` 등록(관리자: 등록·삭제·접속 QR). 데모 두 화면은 **MediaPipe Face Mesh** 를 브라우저(폰)에서 돌려 얼굴 위에 메시를 그린다 — 백엔드 부하 없음.
+- 운영: PM2 `dave-face` · 포트 3011 · nginx `/dave-face/` · WorkGate 카드 "Dave Face". **GPU 를 `oni-detector` 와 공유**해 둘을 동시에 못 돌린다(아래 전환 규칙).
 
 ## 사용법 (폰)
 
 폰 카메라는 **HTTPS 에서만** 열린다 → baro_tunnel 퀵터널 주소로 연다(터널이 재시작하면 주소가 바뀐다).
-LAN `http://192.168.0.213/dave-face/` 로 열면 카메라가 안 된다.
+LAN `http://192.168.0.216/dave-face/` 로 열면 API 는 되지만 카메라가 안 된다. KT 계열 DNS 는 `*.trycloudflare.com` 을 못 풀 수 있다(폰 DNS 를 1.1.1.1 로).
 
 **접속 QR 카드** — 테스트 카드와 관리자 카드(토큰이 들어 있어 자동 입력)를 뽑아 폰으로 찍는다:
 
@@ -22,87 +24,105 @@ apps/api/.venv/bin/python scripts/print-qr.py --no-print   # PDF 만
 ```
 
 수동으로: 터널 주소 `grep -o 'https://[a-z0-9-]*\.trycloudflare\.com' ~/works/baro_tunnel/localfiles/keeper-out.log | tail -1`
-뒤에 `/dave-face/`(테스트) 또는 `/dave-face/admin`(관리자 — 끝에 `/` 없이). 토큰은 `cat localfiles/admin-token`.
+뒤에 `/dave-face/`(테스트) 또는 `/dave-face/admin`(관리자 — 끝에 `/` 없이). 토큰은 `cat localfiles/admin-token`(첫 실행 때 생성).
+이 보드의 DB 는 비어 있으니 `/admin` 에서 다시 등록한다(Pi 와 같은 가중치지만 INT8 ↔ FP16 수치가 조금 다르다).
 
 1. **등록 (관리자)** — ID 입력 → **카메라 켜서 등록** → 얼굴이 잡히면 **촬영해 등록**. 사진 한 장. 같은 ID 는 사진이 바뀐다.
-   정면으로 가까이 찍을수록 나중 유사도가 높다.
-2. **테스트** — **인식 시작** → 프레임마다 등록된 모두와의 유사도 막대(높은 순), 문턱 이상이면 "일치 · id",
-   얼굴 값, 시간(fps · 서버 · NPU · 왕복). **정지**로 끝낸다.
-3. **사진 비교** (`/dave-face/compare`, 등록·토큰 없음) — **카메라 켜기** → **기준 사진 찍기** → 그 뒤로 카메라에 비치는
-   얼굴과 기준 사진의 유사도를 실시간으로 본다. 다른 사람·거리·각도로 바로 비교. **기준 다시 찍기**로 바꾼다.
-   아무것도 저장하지 않는다 (임베딩만 받아 브라우저가 코사인을 잰다).
+2. **테스트** — **인식 시작** → 프레임마다 등록된 모두와의 유사도 막대(높은 순), 문턱 이상이면 "일치 · id", 얼굴 값, 시간(fps · 서버 · GPU · 왕복), 얼굴 위 메시(일치 초록 · 불일치 빨강). **정지**로 끝낸다.
+3. **사진 비교** (`/dave-face/compare`, 등록·토큰 없음) — **카메라 켜기** → **기준 사진 찍기** → 카메라 얼굴과 기준 사진의 유사도를 실시간으로 본다. 아무것도 저장하지 않는다.
 
 ## 수치 보는 법
 
 | 값 | 뜻 |
 |---|---|
-| 유사도 | ArcFace 임베딩의 코사인 (−1~1). 문턱 0.5 이상이면 "일치". 보정 전 초기값이라 이 화면으로 같은 사람·다른 사람 분포를 보고 정한다 (`apps/api/dave_face/web.py` `MATCH_THRESHOLD`) |
-| NPU | SCRFD + ArcFace 두 번의 NPU 호출 시간 |
-| 서버 | Pi 가 요청을 받아 답하기까지 (JPEG 디코드 + NPU + 비교) |
+| 유사도 | ArcFace 임베딩의 코사인 (−1~1). 문턱 0.5 이상이면 "일치". 보정 전 값(`apps/api/dave_face/web.py` `MATCH_THRESHOLD`) |
+| GPU | SCRFD + ArcFace 두 번의 가속기 호출 시간(`npu_ms`) — 호스트 정규화·복사·GPU 실행·동기화 포함 |
+| 서버 | 요청을 받아 답하기까지 (JPEG 디코드 + GPU + 비교) |
 | 왕복 | 폰이 잰 요청~응답 (터널·네트워크 포함) |
-| 눈 거리 · yaw · roll · 선명도 | 얼굴 크기(px) · 좌우 돌림 비율(정면 ≈ 0) · 기울기(°) · Laplacian 분산. 보여 주기만 하고 거르지 않는다 |
+| 눈 거리 · yaw · roll · 선명도 | 얼굴 크기(px) · 좌우 돌림 비율 · 기울기(°) · Laplacian 분산. 보여 주기만 하고 거르지 않는다 |
 
-실측 (2026-10-27, nginx 경유 20회 중앙값): 서버 67 ms · NPU 53 ms (SCRFD 41 + ArcFace 6.7). 공개 샘플 사진
-(`localfiles/samples/public`): 같은 사람 다른 해상도 0.980, 같은 사진 50%·35% 축소(눈 사이 36·25 px) 0.946·0.903,
-다른 사람 −0.02~0.14.
+실측 (2026-10-29, 전원 10W = Orin Nano 4GB·JetPack 6.0 의 최대 모드):
+
+| | Pi 5 + Hailo-10H (main) | Jetson Orin Nano 4GB (jetson) |
+|---|---|---|
+| SCRFD-10G 640² | NPU 41 ms | GPU compute 14.8 ms · Python `infer` 중앙값 30.7 ms |
+| ArcFace MobileFaceNet | NPU 6.7 ms | GPU compute 2.0 ms · Python `infer` 중앙값 3.5 ms |
+| `/api/recognize` 서버 중앙값(localhost 20회) | 67 ms (nginx 경유) | 58 ms (`npu_ms` 41.8 ms) |
+| 워커 메모리 | ≈200 MB | RSS 462 MB (+ GPU 메모리는 RSS 에 안 잡힘) |
+| 엔진 빌드 | — (HEF 다운로드) | mbf 78 s · scrfd 192 s (trtexec, 1회) |
+
+Jetson 의 GPU 시간에는 Pi 에서 HEF 안에 있던 정규화(numpy, 5~10 ms)가 들어간다. 같은 사진끼리 cos 1.000, 다른 사람 ≈0.
 
 ## 저장소 구조
 
 ```
-apps/api/dave_face/   npu.py       VDevice 1개 + InferModel 2개 (hailo_platform 을 import 하는 유일한 모듈)
+apps/api/dave_face/   npu.py       TensorRT 런타임 + 엔진 2개 (tensorrt·cuda 를 import 하는 유일한 모듈)
                       scrfd.py     letterbox, 헤드 (H,C) 매칭, 앵커 디코드, NMS
                       pipeline.py  Umeyama 정렬, 선명도·자세 값, FacePipeline.analyze → Obs | Reject("no_face")
                       db.py        sqlite3 users(사용자당 임베딩 하나), 관리자 토큰
                       web.py       InferenceEngine + REST + 페이지 서빙 (/ 테스트, /compare 사진 비교, /admin 등록)
-apps/api/tests/       unittest — NPU 를 열지 않는다 (가짜 엔진 주입)
-apps/web/src/         Recognize.tsx(테스트) · Compare.tsx(사진 비교) · Admin.tsx · Qr.tsx · flow.tsx(공용·메뉴·시간) · api.ts · capture.ts
-models/5.4.0/         HEF (git 제외) + SHA256SUMS
-scripts/              setup-venv.sh · fetch-hef.sh · bench-npu.py · print-qr.py
+apps/api/tests/       unittest — GPU 를 열지 않는다 (가짜 엔진 주입)
+apps/web/src/         Recognize.tsx · Compare.tsx · Admin.tsx · Qr.tsx · flow.tsx(공용·메뉴·시간·메시 캔버스) · mesh.ts(MediaPipe) · api.ts · capture.ts
+apps/web/public/assets/mediapipe/   WASM + face_landmarker.task (git 제외, scripts/fetch-mediapipe.sh)
+models/onnx/          Hailo Zoo 원본 ONNX (git 제외) + SHA256SUMS
+models/trt/           이 보드에서 만든 엔진 *.fp16.trt8.6.2.engine (git 제외, TRT 버전·GPU 전용)
+models/5.4.0/         Pi 전용 HEF 해시 (main 브랜치용 — 여기서는 쓰지 않는다)
+scripts/              setup-venv.sh · fetch-onnx.sh · build-engines.sh · fetch-mediapipe.sh · bench-npu.py · print-qr.py · fetch-hef.sh(Pi 전용)
 deploy/               ecosystem.config.cjs (PM2) · nginx-dave-face.conf · workgate.json
-localfiles/           git 제외: DB, admin-token, qr/cards.pdf, logs/, samples/, verification/
+localfiles/           git 제외: DB, admin-token, qr/cards.pdf, logs/(빌드 로그 포함), samples/
 ```
 
-## 설치
+## 설치 (새 클론)
 
-배포판 Hailo apt 패키지는 **설치·삭제 금지** (5.4.0 소스 빌드 드라이버가 지워진다). Python 의존성은 uv 로만.
+JetPack 6.0(L4T 36.3, CUDA 12.2, TensorRT 8.6.2, Python 3.10) 기준. Python 의존성은 uv 로만, 시스템 패키지(tensorrt·cv2·numpy)는 그대로 쓴다.
 
 ```bash
-bash scripts/setup-venv.sh     # uv venv(/usr/bin/python3, --system-site-packages) + hailort 5.4.0 wheel + gunicorn + segno
-bash scripts/fetch-hef.sh      # models/5.4.0/*.hef 다운로드 + SHA-256 검증
-pnpm install && pnpm build     # apps/web/dist (index.html + admin.html)
+bash scripts/setup-venv.sh      # uv venv(/usr/bin/python3, --system-site-packages) + cuda-python 12.2 + Flask/gunicorn/segno/tomli
+bash scripts/fetch-onnx.sh      # Hailo Zoo ONNX 두 개 다운로드 + SHA-256 검증 (models/onnx)
+pm2 stop oni-detector           # GPU 메모리 확보 (4 GB 보드 — 빌드는 가용 메모리 1.5 GB 이상 필요)
+systemd-run --user --unit=dave-face-build --collect --same-dir -p OOMPolicy=continue -p MemoryMax=2500M \
+    -- nice -n 10 choom -n 1000 bash scripts/build-engines.sh     # models/trt 엔진 (수 분~수십 분, 1회). 로그 localfiles/logs/
+pnpm install --frozen-lockfile && bash scripts/fetch-mediapipe.sh && pnpm build   # apps/web/dist (+ WASM·메시 모델 복사)
 ```
 
-PATH 의 `python3` 가 다른 venv(3.11)일 수 있으니 항상 `apps/api/.venv/bin/python` 을 쓴다.
+무거운 단계(엔진 빌드·pnpm)는 위처럼 `systemd-run --user` 임시 유닛으로 격리해 돌린다 — 다른 cgroup 의 OOM 연쇄를 막는다.
 
 ## 실행·배포
 
 ```bash
-env -i HOME=$HOME USER=$USER LANG=$LANG PATH=$NVM_BIN:/usr/bin:/bin pm2 start deploy/ecosystem.config.cjs --only dave-face
+env -i HOME=$HOME USER=$USER LANG=$LANG PATH=/home/vcacore/.nvm/versions/node/v24.22.1/bin:/usr/bin:/bin \
+    /home/vcacore/.nvm/versions/node/v24.22.1/bin/pm2 start deploy/ecosystem.config.cjs --only dave-face
 pm2 restart dave-face          # 코드·빌드 변경 반영
 pm2 logs dave-face
 apps/api/run-web.sh            # 개발용 직접 실행 (127.0.0.1:3011)
 ```
 
-**NPU 는 한 프로세스만 쓸 수 있다.** dave-face 가 떠 있으면 piWanKanobi·bench 는 `HAILO_OUT_OF_PHYSICAL_DEVICES` 로 실패한다.
+**GPU 전환 규칙** — 4 GB 보드에서 `oni-detector`(torch, GPU ≈2 GB)와 dave-face 는 동시에 못 돈다. `run-web.sh` 는 `127.0.0.1:9082` 가 열려 있으면 기동을 거부한다.
 
 ```bash
-pm2 stop dave-face && pm2 start piwankanobi    # VLM 으로 전환
-pm2 stop piwankanobi && pm2 start dave-face    # 얼굴 인식으로 복귀
+pm2 stop oni-detector && pm2 start deploy/ecosystem.config.cjs --only dave-face   # 얼굴 인식으로 전환 (위 env -i 형태로)
+pm2 delete dave-face && pm2 start oni-detector                                     # 되돌리기
 ```
 
-DB 스키마를 바꾸면 `localfiles/dave_face.db` 를 지우고 재시작한다 (마이그레이션 없음). nginx 는
-`/etc/nginx/sites-available/default` 의 include 한 줄. WorkGate 갱신: `node ~/works/WorkGate/scripts/py.cjs registry put ./deploy/workgate.json --by <작업자>`.
+`pm2 save` 는 dave-face 가 목록에 **없을 때만** 한다 — 저장된 앱은 재부팅 때 함께 뜨므로 두 GPU 앱이 동시에 기동될 수 있다. `pm2 delete oni-detector` 금지(stop 만).
+health 가 `503 {state: "error"}` 로 굳으면(엔진 로드 실패 등) `pm2 logs dave-face` 를 보고 `pm2 restart dave-face`.
+
+DB 스키마를 바꾸면 `localfiles/dave_face.db` 를 지우고 재시작한다 (마이그레이션 없음). nginx 는 `/etc/nginx/sites-available/default` 의
+`include /home/vcacore/works/dave_face/deploy/nginx-dave-face.conf;` 한 줄 — 저장소를 옮기거나 지우기 전에 그 줄을 먼저 빼고 `sudo nginx -t && sudo systemctl reload nginx`.
+WorkGate 갱신: `node ~/works/WorkGate/scripts/py.cjs registry put ./deploy/workgate.json --by <작업자>`.
 
 ## 테스트·점검
 
 ```bash
-pnpm test                      # tsc + vite build + API unittest (NPU 불필요)
+pnpm test                      # tsc + vite build + API unittest (GPU 불필요)
 curl -s 127.0.0.1:3011/api/health
 curl -s -H 'content-type: image/jpeg' --data-binary @face.jpg 127.0.0.1:3011/api/recognize   # 사진 한 장의 유사도
 
-pm2 stop dave-face             # NPU 직접 점검은 서비스를 먼저 내린다
-apps/api/.venv/bin/python scripts/bench-npu.py                          # 지연시간
+pm2 stop dave-face             # GPU 직접 점검은 서비스를 먼저 내린다 (엔진·CUDA 컨텍스트가 두 벌 올라가면 안 된다)
+apps/api/.venv/bin/python scripts/bench-npu.py                          # 입출력 shape, 지연시간(중앙값·p95)
+apps/api/.venv/bin/python scripts/bench-npu.py --image a.jpg --draw out.jpg   # 검출 결과 그리기
 apps/api/.venv/bin/python scripts/bench-npu.py --pair a.jpg b.jpg       # 두 얼굴 코사인
+/usr/src/tensorrt/bin/trtexec --loadEngine=models/trt/scrfd_10g.fp16.trt8.6.2.engine --warmUp=500 --iterations=50   # GPU 만의 시간
 pm2 start dave-face
 ```
 
@@ -112,14 +132,15 @@ pm2 start dave-face
 |---|---|---|
 | GET | `/`, `/compare`, `/admin` | 인식 테스트, 사진 비교, 등록(관리자) 페이지 (끝에 `/` 를 붙이면 404) |
 | GET | `/api/health`, `/api/version` | 상태 (ready/busy 200, 그 외 503), 버전 |
-| POST | `/api/recognize` | 본문 = JPEG → `{status, threshold, face?, scores?, match?, elapsed_ms, npu_ms}` |
+| POST | `/api/recognize` | 본문 = JPEG → `{status, threshold, face?, scores?, match?, elapsed_ms, npu_ms}` (`npu_ms` = GPU 시간; 키 이름은 Pi 와 호환) |
 | POST | `/api/embed` | 본문 = JPEG → `{status, threshold, face?, embedding?(512), elapsed_ms, npu_ms}` — 저장하지 않는다 |
 | POST | `/api/enroll` | 관리자(`X-Admin-Token`). multipart `user_id` + `frame`(JPEG 한 장) → `{user_id, replaced, face}` · 얼굴 없음 422 |
 | GET | `/api/users` | 관리자. 등록 목록 |
 | DELETE | `/api/users/<id>` | 관리자. 삭제 |
+| GET | `/assets/mediapipe/...` | 메시용 WASM·모델 (같은 출처에서만 받는다 — 외부 요청 없음) |
 
 ## 주의 사항
 
 - **데모다.** 라이브니스가 없어 사진·화면으로도 일치한다. 문턱 0.5 는 보정 전 값이다.
-- `/api/recognize` 는 인증 없이 등록된 ID 와 점수를 돌려준다. 터널로 인터넷에 열려 있으니 얼굴은 동의한 사람만 등록하고,
-  관리자 카드·토큰은 아무에게나 주지 않는다.
+- `/api/recognize` 는 인증 없이 등록된 ID 와 점수를 돌려준다. 터널로 인터넷에 열려 있으니 얼굴은 동의한 사람만 등록하고, 관리자 카드·토큰은 아무에게나 주지 않는다.
+- Face Mesh 는 `@mediapipe/tasks-vision` **0.10.35 고정**. 1.x 는 사용 통계를 Google(`odml.pa.googleapis.com`)로 보내고 옵트아웃이 없다 — 올리지 말 것. WASM·모델은 자체 호스팅(첫 로드 ≈11 MB, 폰에 캐시).

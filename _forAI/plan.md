@@ -9,23 +9,31 @@
 
 ## Current goal
 
-- 라즈베리 + 헤일로 얼굴 인식 성능을 폰으로 보여 주는 데모를 안정적으로 유지한다 (인식 테스트 · 사진 비교 · 등록).
+- Jetson Orin Nano 4GB(ABP301)에서 Pi 와 같은 모델로 얼굴 인식 데모를 안정적으로 보여 준다(인식 테스트 · 사진 비교 · 등록 + Face Mesh 연출). `main`(Pi/Hailo)과 수치를 나란히 비교한다.
 
 ## Near-term work
 
-- 폰(iPhone Safari)에서 사진 비교 화면 실사용 확인: 같은 사람·다른 사람·거리·각도별 유사도 분포를 보고 `MATCH_THRESHOLD`(0.5)를 정한다.
+- 폰(iPhone Safari) 실사용: 메시 오버레이가 카메라 위에 맞게 그려지는지(미러·cover 정렬), 첫 로드 시간(WASM ≈11 MB), GPU 델리게이트 실패 시 CPU 폴백 동작 확인.
+- `MATCH_THRESHOLD`(0.5) 를 FP16 엔진 기준으로 재검증 — 같은 사람·다른 사람 분포를 `/compare` 로 보고 정한다. 이 보드 DB 는 비어 있으니 `/admin` 재등록.
+- 측정 보강: 콜드 스타트(30 s 이상 유휴 뒤 첫 요청 — GPU 클럭 306 MHz 유휴·스왑) 수치를 readme 에 추가.
 - 터널 주소가 바뀌면 `scripts/print-qr.py` 로 접속 QR 카드를 다시 뽑는다.
+- 선택: INT8(캘리브레이션) 또는 `scrfd_2.5g` 엔진(디코더 동일) 으로 지연 비교; `arcface_r50` 인식기(LFW 99.7) — Pi 도 같은 Zoo 모델이 있어 양쪽에서 바꿀 때만.
+- 선택: Pi 와 Jetson 에서 같은 JPEG 의 `/api/embed` 임베딩 코사인(≥0.95 기대) 실측해 기록.
 
 ## Structure decisions
 
-- NPU 의존은 `apps/api/dave_face/npu.py` 하나로 가둔다. 다른 보드(RK3588·QCS6490·CIX P1 등)로 옮길 때는 모델 변환 + `npu.py` 교체만 한다.
-- 웹은 Vite 다중 엔트리(화면별 HTML)와 상대 경로만 쓴다. 공용 로직은 `flow.tsx`.
-- 서버 상태는 등록 임베딩(sqlite)뿐이다. 사진 비교는 서버에 저장하지 않는다.
-- 보류 (요청이 있을 때만): 라이브니스·패시브 PAD, 1:1 인증, CCTV RTSP 입력, 대규모 임계값 보정.
+- 가속기 의존은 `apps/api/dave_face/npu.py` 하나로 가둔다(Hailo → TensorRT 교체가 그 파일 + 모델 스크립트로 끝났다). 다른 보드로 옮길 때도 같다.
+- 모델은 Hailo Model Zoo 원본 ONNX 를 쓴다 — Pi 와 가중치가 같아 비교가 성립한다. 엔진은 보드에서 빌드하고 커밋하지 않는다(TRT 버전 포함 파일명).
+- 웹은 Vite 다중 엔트리(화면별 HTML)와 상대 경로만 쓴다. 메시는 데모 두 페이지에만, `mesh.ts` 한 파일 + `Stage` 프롭. 와이어 키 `npu_ms` 는 유지(라벨만 GPU).
+- 서버 상태는 등록 임베딩(sqlite)뿐이다. 사진 비교·메시는 서버에 아무것도 남기지 않는다.
+- 운영: GPU 를 `oni-detector` 와 배타적으로 쓴다(인터락 + 전환 규칙). dave-face 는 pm2 덤프에 넣지 않는다.
+- 보류(요청이 있을 때만): 라이브니스·패시브 PAD, 1:1 인증, CCTV RTSP 입력, 대규모 임계값 보정, web.py 의 초기화 실패 fail-fast(`os._exit(3)`), 액세스 로그 회전.
 
 ## Risks
 
+- 4 GB 메모리: 두 GPU 앱 동시 기동(OOM) — 인터락·덤프 규칙으로 막지만 사람이 `pm2 save` 를 잘못 하면 재발. 워커 OOM 은 gunicorn 마스터가 재포크(그동안 health 503).
+- 초기화 실패(엔진 없음·GPU 점유)는 `state: error` 503 으로 굳는다(web.py 불변) → `pm2 restart dave-face` 로 복구, run-web.sh 사전 검사로 대부분 사전 차단.
 - 퀵터널 주소가 재시작마다 바뀐다 → 인쇄한 QR 이 무효가 된다. KT 계열 DNS 는 `*.trycloudflare.com` 을 막을 수 있다.
-- `/api/recognize`·`/api/embed` 가 무인증으로 인터넷에 열려 있다 → 등록 ID·점수가 보이고 NPU 를 누구나 쓸 수 있다 (데모라 감수).
-- NPU 프로세스 독점 → dave-face 와 piWanKanobi 를 동시에 돌릴 수 없다 (`pm2 stop`/`start` 로 전환).
-- 문턱 0.5 는 미보정이고, 라이브니스가 없어 사진·화면으로도 일치한다.
+- `/api/recognize`·`/api/embed` 무인증(데모) — 등록 ID·점수가 보이고 GPU 를 누구나 쓸 수 있다.
+- 문턱 0.5 미보정, 라이브니스 없음.
+- JetPack 업그레이드 시 엔진 재빌드 필요(파일명에 TRT 버전 → "엔진 없음" 으로 드러남), cuda-python 핀(12.2.*) 도 드라이버에 맞춰 바꿔야 한다.

@@ -1,6 +1,6 @@
 """프레임 한 장 -> 얼굴 관측: SCRFD 검출 -> 5점 Umeyama 정렬(112x112) -> ArcFace 임베딩 + 품질·자세 값.
 
-NPU 는 주입받는다 (detect_raw, embed 를 가진 객체). 이 모듈은 hailo_platform 을 import 하지 않는다.
+가속기는 주입받는다 (detect_raw, embed 를 가진 객체). 이 모듈은 tensorrt / cuda 를 import 하지 않는다.
 """
 
 import math

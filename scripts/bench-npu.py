@@ -1,8 +1,8 @@
-"""NPU 점검·벤치. dave-face 서비스(또는 다른 프로세스)가 NPU 를 잡고 있지 않을 때 실행한다.
+"""GPU(TensorRT 엔진) 점검·벤치. dave-face 서비스를 내린 상태에서 실행한다 — 4 GB 보드에서 CUDA 컨텍스트·엔진이 두 벌 올라가면 안 된다.
 
-  cd /home/goback/works/dave_face
-  HAILORT_LOGGER_PATH=localfiles/logs apps/api/.venv/bin/python scripts/bench-npu.py          # 출력 이름·shape·양자화, 모델별 지연시간
-  HAILORT_LOGGER_PATH=localfiles/logs apps/api/.venv/bin/python scripts/bench-npu.py --hold 60 # 60초 동안 VDevice 를 잡고 1초에 1회 추론
+  cd /home/vcacore/works/dave_face
+  apps/api/.venv/bin/python scripts/bench-npu.py          # 입출력 shape, 모델별 지연시간(워밍업 3회 뒤 중앙값·p95)
+  apps/api/.venv/bin/python scripts/bench-npu.py --hold 60 # 60초 동안 엔진을 잡고 1초에 1회 추론
   ... --image a.jpg [--draw out.jpg]   # 검출 결과(점수·박스·5점·자세·블러)와 파이프라인 판정
   ... --pair a.jpg b.jpg [--bgr]        # 두 사진의 가장 큰 얼굴 임베딩 코사인 (--bgr: ArcFace 에 BGR 을 넣어 채널 순서 확인)
 """
@@ -23,7 +23,7 @@ from dave_face.pipeline import FacePipeline, align, pose  # noqa: E402
 
 def timed(model, runs):
     image = np.zeros(model.input_shape, dtype=np.uint8)
-    for _ in range(2):
+    for _ in range(3):
         model.infer(image)
     times = []
     for _ in range(runs):
@@ -102,7 +102,7 @@ def embedding(npu, path, bgr):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--runs", type=int, default=20)
-    parser.add_argument("--hold", type=float, default=0, help="VDevice 를 잡고 있을 초 (1초에 1회 추론)")
+    parser.add_argument("--hold", type=float, default=0, help="엔진을 잡고 있을 초 (1초에 1회 추론)")
     parser.add_argument("--image", nargs="+", help="검출을 확인할 사진")
     parser.add_argument("--draw", help="--image 가 하나일 때 결과를 그려 저장할 경로")
     parser.add_argument("--pair", nargs=2, metavar=("A", "B"), help="임베딩 코사인을 볼 두 사진")
@@ -122,8 +122,8 @@ def main():
             return 0
         for label, model in (("det", npu.det), ("rec", npu.rec)):
             print(f"[{label}] input {model.input_shape}")
-            for name, (shape, zp, scale) in model.outputs.items():
-                print(f"[{label}] output {name} {shape} zp={zp:g} scale={scale:.6f}")
+            for name, shape in model.outputs.items():
+                print(f"[{label}] output {name} {shape}")
             median, p95 = timed(model, args.runs)
             print(f"[{label}] {args.runs} runs: median {median:.2f} ms, p95 {p95:.2f} ms")
         vector = npu.embed(np.zeros(npu.rec.input_shape, dtype=np.uint8))

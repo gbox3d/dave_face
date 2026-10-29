@@ -2,6 +2,7 @@
 import { type ReactNode, type RefObject, useEffect, useRef, useState } from "react";
 import { ApiError, type Face, type Health, fetchHealth } from "./api";
 import { captureJpeg, openCamera, stopCamera } from "./capture";
+import { type Tone, useFaceMesh } from "./mesh";
 
 export const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export const CANCELLED = "cancelled";
@@ -83,7 +84,7 @@ export function useCamera() {
   return { video, cancelled, withCamera };
 }
 
-// 응답 성능: 서버가 잰 처리 시간(elapsed_ms)·NPU 시간(npu_ms)과 폰이 잰 왕복을 프레임마다 더한다.
+// 응답 성능: 서버가 잰 처리 시간(elapsed_ms)·GPU 시간(npu_ms)과 폰이 잰 왕복을 프레임마다 더한다.
 // fps 는 첫 프레임 요청부터 마지막 응답까지로 잰다 — 정지한 뒤 다시 그려져도 값이 바뀌지 않는다.
 export interface Timing { frames: number; server: number; npu: number; rtt: number; started: number; last: number }
 export function newTiming(): Timing {
@@ -102,7 +103,7 @@ export function TimingLine({ t }: { t: Timing }) {
     <p className="timing">
       <span>{t.frames}프레임 / {seconds.toFixed(0)}s ({(t.frames / Math.max(seconds, 0.1)).toFixed(1)} fps)</span>
       <span>서버 {avg(t.server)} ms</span>
-      <span>NPU {avg(t.npu)} ms</span>
+      <span>GPU {avg(t.npu)} ms</span>
       <span>왕복 {avg(t.rtt)} ms</span>
     </p>
   );
@@ -137,10 +138,15 @@ export function Page({ page, eyebrow, health, children }:
   );
 }
 
-export function Stage({ video, on }: { video: RefObject<HTMLVideoElement | null>; on: boolean }) {
+// mesh 를 켠 화면(인식 테스트·사진 비교)은 영상 위에 얼굴 메시 캔버스를 겹친다 — 관리자 화면은 켜지 않는다.
+export function Stage({ video, on, mesh, tone }:
+                      { video: RefObject<HTMLVideoElement | null>; on: boolean; mesh?: boolean; tone?: Tone }) {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  useFaceMesh(video, canvas, on && !!mesh, tone ?? "");  // 훅은 늘 부른다 — mesh 가 없으면 on 이 false 라 아무것도 하지 않는다
   return (
     <section className={`camera ${on ? "on" : ""}`} aria-hidden={!on}>
       <video ref={video} playsInline muted />
+      {mesh && <canvas ref={canvas} className="mesh" aria-hidden />}
       <div className="guide" />
     </section>
   );

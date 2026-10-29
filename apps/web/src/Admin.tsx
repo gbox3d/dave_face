@@ -145,7 +145,7 @@ export function Admin() {
       <section className="panel">
         <label htmlFor="token">관리자 토큰</label>
         <input id="token" type="password" value={token} onChange={(e) => setToken(e.target.value.trim())} autoComplete="off" />
-        <p className="note">관리자 QR 로 열면 자동으로 채워지고, 이 탭을 닫으면 지워집니다. Pi 에서는 <code>cat localfiles/admin-token</code>.</p>
+        <p className="note">관리자 QR 로 열면 자동으로 채워지고, 이 탭을 닫으면 지워집니다. 보드에서는 <code>cat localfiles/admin-token</code>.</p>
       </section>
 
       <form className="panel" onSubmit={enrollWithCamera}>

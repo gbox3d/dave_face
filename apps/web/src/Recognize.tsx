@@ -48,7 +48,7 @@ export function Recognize() {
   const tone = !reply || !face ? "" : reply.match ? "ok" : "fail";
   return (
     <Page page="test" eyebrow="얼굴 인식 테스트" health={health}>
-      <Stage video={video} on={running} />
+      <Stage video={video} on={running} mesh tone={tone} />
 
       <section className="panel">
         {running

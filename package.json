@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.1.0",
-  "description": "Raspberry Pi 5 + Hailo-10H 얼굴 인식 데모 — apps/api(Python, SCRFD + ArcFace)와 apps/web(React)을 한 저장소에 둔다.",
+  "description": "Jetson Orin Nano + TensorRT 얼굴 인식 데모(jetson 브랜치; main 은 Raspberry Pi 5 + Hailo-10H) — apps/api(Python, SCRFD + ArcFace)와 apps/web(React)을 한 저장소에 둔다.",
   "scripts": {
     "build": "pnpm -r build",
     "test": "pnpm -r test && pnpm test:api",

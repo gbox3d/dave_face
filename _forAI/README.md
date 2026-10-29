@@ -10,7 +10,7 @@
 
 ## 한 줄 요약
 
-이 디렉터리는 `dave_face`(Raspberry Pi 5 + Hailo-10H 얼굴 인식 성능 데모) 작업을 이어받을 때 필요한 AI 작업 문맥을 정리해 두는 곳이다.
+이 디렉터리는 `dave_face`(얼굴 인식 성능 데모 — `jetson` 브랜치: Jetson Orin Nano 4GB + TensorRT, `main` 브랜치: Raspberry Pi 5 + Hailo-10H) 작업을 이어받을 때 필요한 AI 작업 문맥을 정리해 두는 곳이다.
 
 ## 읽는 순서
 
@@ -29,11 +29,13 @@
 
 ## 현재 스냅샷
 
-- 저장소 경로: `/home/goback/works/dave_face`
-- 대상 보드/플랫폼: Raspberry Pi 5 (8 GiB, Debian 13 aarch64) + Hailo-10H AI HAT+ 2 (PCIe `0001:01:00.0`, 장치 `/dev/h1x-0`), HailoRT 5.4.0 소스 빌드(`/opt/hailort/5.4.0`)
+- 저장소 경로: `/home/vcacore/works/dave_face` (브랜치 `jetson`; GitHub `gbox3d/dave_face`, `main` = Pi 판 `/home/goback/works/dave_face`)
+- 대상 보드/플랫폼: NVIDIA Jetson Orin Nano **4GB**(p3767-0004, WorkGate 호스트 `ABP301`, 192.168.0.216), JetPack 6.0 / L4T 36.3.0, CUDA 12.2, cuDNN 8.9.4, TensorRT 8.6.2, Python 3.10.12, 전원 10W(이 모듈의 최대 모드)
 - 현재 버전: 0.1.0 (루트 `package.json` · `apps/web/package.json` · `apps/api/pyproject.toml` · `dave_face.__version__` 네 곳이 같아야 한다)
 - 메인 엔트리포인트: `apps/api/run-web.sh` → gunicorn `dave_face.web:create_app()` (127.0.0.1:3011, PM2 `dave-face`, nginx `/dave-face/`)
-- 화면: `/` 인식 테스트 · `/compare` 사진 비교 · `/admin` 등록(관리자). 사람용 사용법은 루트 `readme.md`
+- 가속기 백엔드: `apps/api/dave_face/npu.py` = TensorRT 8.6 Python API + cuda-python 12.2, 엔진 `models/trt/*.fp16.trt8.6.2.engine`(이 보드에서 빌드, git 제외)
+- 화면: `/` 인식 테스트 · `/compare` 사진 비교(데모 두 개, MediaPipe Face Mesh 오버레이) · `/admin` 등록(관리자). 사람용 사용법은 루트 `readme.md`
+- GPU 공유: `oni-detector`(pm2)와 동시 실행 불가 — 전환 규칙은 `readme.md`·`memo.md`
 
 ## 유지 규칙
 

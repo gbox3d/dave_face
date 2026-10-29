@@ -1,6 +1,6 @@
-"""SCRFD 전처리·후처리 (Model Zoo v5.4.0 hailo10h HEF 계약). numpy·OpenCV 만 쓴다.
+"""SCRFD 전처리·후처리 (Hailo Model Zoo scrfd_10g 의 헤드 계약 — HEF 와 TensorRT 엔진이 같다). numpy·OpenCV 만 쓴다.
 
-- 입력: raw RGB uint8 640x640. 정규화 (x-127.5)/128 과 점수 시그모이드는 HEF 안에 있다.
+- 입력: raw RGB uint8 640x640. 정규화 (x-127.5)/128 은 가속기 백엔드(npu.py)가 하고, 점수 시그모이드는 모델 그래프 안에 있다.
 - 리사이즈: 비율 유지, 좌상단 기준, 우/하단 0 패딩. 원본 좌표 = 네트워크 좌표 / scale.
 - 출력 9개: 스트라이드 8/16/32 (격자 80/40/20) x {점수 2ch, bbox 8ch, kps 20ch}, 셀당 앵커 2개
   (앵커 인덱스가 가장 빠르게 변한다). 레이어 이름은 모델마다 달라(scrfd_2.5g) (H, C) 로 고른다.

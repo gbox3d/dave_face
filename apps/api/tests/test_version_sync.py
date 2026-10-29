@@ -1,8 +1,12 @@
 """WorkGate 는 /api/version 을 저장소 버전과 비교한다 — 버전 문자열 네 곳이 같아야 한다."""
 
 import json
-import tomllib
 import unittest
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10 (JetPack 6)
+    import tomli as tomllib
 from pathlib import Path
 
 from dave_face import __version__

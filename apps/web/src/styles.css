@@ -104,6 +104,8 @@ button.danger { color: var(--fail); border-color: var(--fail); padding: 6px 10px
   object-fit: cover;
   transform: scaleX(-1); /* 미리보기만 거울처럼 — 업로드 픽셀은 그대로 */
 }
+/* 얼굴 메시 캔버스 — 영상과 같은 cover·거울이라 정규화 좌표를 그대로 그리면 겹친다 */
+.camera canvas.mesh { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); pointer-events: none; }
 .guide {
   position: absolute;
   inset: 12% 18%;

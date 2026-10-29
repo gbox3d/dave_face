@@ -136,7 +136,8 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(pipeline.calls, 1)
 
     def test_sdk_is_never_imported_by_tests(self):
-        self.assertEqual([m for m in sys.modules if m.startswith("hailo_platform")], [])
+        sdk = {"hailo_platform", "tensorrt", "cuda"}
+        self.assertEqual([m for m in sys.modules if m.split(".")[0] in sdk], [])
 
 
 if __name__ == "__main__":

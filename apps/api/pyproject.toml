@@ -1,16 +1,17 @@
 [project]
 name = "dave-face"
 version = "0.1.0"
-description = "Raspberry Pi 5 + Hailo-10H 얼굴 인식 데모 API (SCRFD + ArcFace, NPU 추론)"
-requires-python = ">=3.13"
+description = "Jetson Orin Nano(TensorRT 8.6) 얼굴 인식 데모 API (SCRFD + ArcFace, GPU 추론)"
+requires-python = ">=3.10"
 
-# HailoRT SDK 는 /opt/hailort/5.4.0/dist 의 wheel 을 --no-deps 로 따로 설치한다 (scripts/setup-venv.sh).
-# OpenCV·NumPy·Pillow·Flask 는 시스템 패키지를 --system-site-packages 로 쓴다.
+# tensorrt(8.6.2)·OpenCV·NumPy·Pillow 는 JetPack 시스템 Python 3.10 의 것을 --system-site-packages 로 쓴다 (scripts/setup-venv.sh).
 dependencies = []
 
 [project.optional-dependencies]
+jetson = ["cuda-python==12.2.*", "cython"]   # cudart 바인딩 (import 때 cython 을 요구한다). 드라이버의 CUDA 12.2 에 맞춘다
 web = ["Flask>=3.1,<4", "gunicorn>=23,<24"]
 tools = ["segno>=1.6,<2"]   # scripts/print-qr.py (QR → PDF)
+test = ["tomli>=2,<3; python_version < '3.11'"]   # tests/test_version_sync.py — 3.10 에는 tomllib 이 없다
 
 [build-system]
 requires = ["setuptools>=68"]

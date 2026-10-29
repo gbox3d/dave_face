@@ -87,7 +87,7 @@ export function Compare() {
 
   return (
     <Page page="compare" eyebrow="사진 비교 테스트" health={health}>
-      <Stage video={video} on={running} />
+      <Stage video={video} on={running} mesh tone={score === null ? "" : same ? "ok" : "fail"} />
 
       <section className="panel">
         {running ? (
