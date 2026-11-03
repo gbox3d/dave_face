@@ -45,4 +45,4 @@
 - 바로메모 team-n #1797 작성: Jetson ABP301 허브(oni-detector + dave-face 공유 규칙·실측·미결 8건). oni 허브 #1360·인수인계 #1796 에 연결 댓글은 자동 승인 거부로 보류.
 - 문서: `readme.md` 에 GPU 전환 절(상태 확인·켜기·끄기 한 블록, `env -i` 이유)과 「문제 해결」 표(502·인터락·엔진 없음·포트·503 error·터널 주소·KT DNS·MZOK 503·LAN http·메시·유사도) 추가, `memo.md` 의 oni 사실 정정(127.0.0.1·≈2 GB → 0.0.0.0·1.4 GB), 반복 금지에 "터널 재시작으로 주소 문제를 풀지 말 것". `run-web.sh` 인터락 문구 `127.0.0.1:9082` → `:9082`(검사 자체는 원래 주소 무관).
 - 같은 시각 codex 세션이 흥 인수인계 내용(`../system_info/handover-nano-ai-20261103.md` 링크)을 `_forAI/`·`readme.md` 에 넣었다 — 그 위에 얹어 함께 커밋했다.
-- push 시도: 자격증명 없음(`could not read Username for 'https://github.com'`) → 사용자 몫.
+- push: 처음에는 자격증명이 없어 실패(`could not read Username for 'https://github.com'`). `gh` 2.103.3 을 `~/.local/bin` 에 설치(체크섬 확인)하고 사용자가 기기 인증 코드로 gbox3d 계정을 승인 → `gh auth setup-git` → `git push -u origin jetson` 성공(`750a44b`, 새 원격 브랜치).

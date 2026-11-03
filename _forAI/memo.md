@@ -74,7 +74,7 @@
 - nginx: `sites-available/default` 에 include 한 줄, 변경은 백업 → `sudo nginx -t` → `sudo systemctl reload nginx`(restart 금지, 실패하면 전 서비스가 내려간다). 저장소 이동/삭제 전에 include 제거.
 - 폰 접속: HTTPS 터널만 카메라 가능. 주소는 keeper 로그(MZOK `GB_jeton-nano-01`), KT 계열 DNS 는 `*.trycloudflare.com` NXDOMAIN 가능. LAN http 는 curl 테스트 전용.
 - 터널 주소는 `baro-tunnel-auto` 가 재시작할 때마다 바뀐다 — 2026-10-29 pm2 데몬 이동 때 한 번 바뀌어 "WorkGate 터널 주소가 안 들어간다" 문의가 있었다(터널·`/gate/` 는 정상, 옛 주소였다). MZOK 레지스트리는 keeper 가 자동 갱신한다. MZOK 공개 중계 `GET /go/<id>/...` 는 **503 `relay_unconfigured`**(2026-11-03, 레지스트리의 모든 기기 공통 — Worker 운영자가 `MZOK_RELAY_POLICIES` 를 넣어야 동작), 레지스트리 조회 `/v1/devices/<id>` 는 토큰 필요 → 로컬에서는 keeper 로그를 쓴다.
-- Git: 이 보드에는 GitHub 자격증명이 없다(gh·SSH 키·credential helper 없음, `git push` → `could not read Username`). `jetson` 브랜치 push 는 자격증명이 있는 곳에서 한다.
+- Git: 2026-11-03 부터 이 보드에서 push 가능 — `gh` 2.103.3 을 `~/.local/bin/gh` 에 설치(공식 릴리스, 체크섬 확인)하고 gbox3d 계정 기기 인증(`gh auth login --web`, scope `repo`), `gh auth setup-git` 으로 git credential helper 를 연결했다. 토큰은 `~/.config/gh/hosts.yml` 평문(키링 없음) — 회수는 `gh auth logout`. 그 전에는 자격증명이 없어 `could not read Username` 으로 실패했다.
 - 바로메모(team-n) #1780 이 이번 포팅의 작업 글(시작/결과). **#1797 이 이 보드의 허브**(oni-detector 와 dave-face 공유 규칙·실측·미결 항목, 댓글로 갱신).
 
 ## 대안 조사 (2026-10-28)
