@@ -42,7 +42,7 @@
 
 - 사용자 문의 "WorkGate 터널 주소가 안 들어간다" 조사: 터널·`/gate/`·`/tunnel-ui/` 는 현재 주소로 200. 10-29 pm2 데몬 이동 때 `baro-tunnel-auto` 가 재시작해 주소가 바뀐 것이고, MZOK `GB_jeton-nano-01` 은 keeper 로그와 일치(자동 갱신). MZOK `/go/<id>` 는 레지스트리 전 기기에서 503 `relay_unconfigured`(Worker 설정 없음 — 이 보드 문제 아님).
 - 보드 실측(oni-detector 단독): nvmap 1,423,372 KB, VmSwap 1.2 GB, MemAvailable 290 MB, oni API 는 `0.0.0.0:9082`. oni 1.5.0 Jetson 지연(10-28 oni 측 기록): 1080p VPD 194 ms, VPD+LPD 700 ms, 전체 판독 6.2 s(OCR 4.0 s), 4K 15.4 s.
-- 바로메모 team-n #1797 작성: Jetson ABP301 허브(oni-detector + dave-face 공유 규칙·실측·미결 8건). oni 허브 #1360·인수인계 #1796 에 연결 댓글은 자동 승인 거부로 보류.
+- 바로메모 team-n #1797 작성: Jetson ABP301 허브(oni-detector + dave-face 공유 규칙·실측·미결 8건). oni 허브 #1360·인수인계 #1796 에 #1797 연결 댓글(처음엔 자동 승인 거부, 사용자가 바로메모 쓰기를 승인한 뒤 등록).
 - 문서: `readme.md` 에 GPU 전환 절(상태 확인·켜기·끄기 한 블록, `env -i` 이유)과 「문제 해결」 표(502·인터락·엔진 없음·포트·503 error·터널 주소·KT DNS·MZOK 503·LAN http·메시·유사도) 추가, `memo.md` 의 oni 사실 정정(127.0.0.1·≈2 GB → 0.0.0.0·1.4 GB), 반복 금지에 "터널 재시작으로 주소 문제를 풀지 말 것". `run-web.sh` 인터락 문구 `127.0.0.1:9082` → `:9082`(검사 자체는 원래 주소 무관).
 - 같은 시각 codex 세션이 흥 인수인계 내용(`../system_info/handover-nano-ai-20261103.md` 링크)을 `_forAI/`·`readme.md` 에 넣었다 — 그 위에 얹어 함께 커밋했다.
 - push: 처음에는 자격증명이 없어 실패(`could not read Username for 'https://github.com'`). `gh` 2.103.3 을 `~/.local/bin` 에 설치(체크섬 확인)하고 사용자가 기기 인증 코드로 gbox3d 계정을 승인 → `gh auth setup-git` → `git push -u origin jetson` 성공(`750a44b`, 새 원격 브랜치).
