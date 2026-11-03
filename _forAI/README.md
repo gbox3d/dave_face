@@ -33,7 +33,7 @@
 - 흥의 시작 문서: [나노 보드 AI 서비스 인수인계](../../system_info/handover-nano-ai-20261103.md). 실행 전환, 현재 접속 주소 조회, 모델·데이터·토큰 위치를 함께 확인한다.
 - 저장소 경로: `/home/vcacore/works/dave_face` (브랜치 `jetson`; GitHub `gbox3d/dave_face`, `main` = Pi 판 `/home/goback/works/dave_face`)
 - 원격: `jetson` 브랜치는 origin(`gbox3d/dave_face`)에 올라가 있다(2026-11-03). 이 보드에서 push 가능(`gh` 기기 인증, `memo.md` 참고). 보드 허브는 바로메모 team-n #1797(oni-detector 와 함께).
-- 설치 소스 기준: `d4dbdb1` (`jetson`), 애플리케이션 `0.1.0`. 2026-10-29 성능·GPU 검증 기록을 유지하며, 11월 3일에는 서비스를 전환하거나 GPU 벤치를 다시 실행하지 않았다.
+- 설치 소스: `jetson` 브랜치의 2026-11-03 조회 HEAD `26bfcdb` / 포팅 기준 `d4dbdb1`, 애플리케이션 `0.1.0`. 2026-10-29 성능·GPU 검증 기록을 유지하며, 11월 3일에는 서비스를 전환하거나 GPU 벤치를 다시 실행하지 않았다.
 - 대상 보드/플랫폼: NVIDIA Jetson Orin Nano **4GB**(p3767-0004, WorkGate 호스트 `ABP301`, 192.168.0.216), JetPack 6.0 / L4T 36.3.0, CUDA 12.2, cuDNN 8.9.4, TensorRT 8.6.2, Python 3.10.12, 전원 10W(이 모듈의 최대 모드)
 - 현재 버전: 0.1.0 (루트 `package.json` · `apps/web/package.json` · `apps/api/pyproject.toml` · `dave_face.__version__` 네 곳이 같아야 한다)
 - 메인 엔트리포인트: `apps/api/run-web.sh` → gunicorn `dave_face.web:create_app()` (127.0.0.1:3011, PM2 `dave-face`, nginx `/dave-face/`)

@@ -15,7 +15,7 @@
 ## 인수인계 현황 (2026-11-03)
 
 - 흥의 통합 운영 문서: [나노 보드 AI 서비스 인수인계](../../system_info/handover-nano-ai-20261103.md).
-- Dave Face `0.1.0` / `jetson` / `d4dbdb1`은 설치 완료·대기 상태다. 기본 실행 서비스는 `oni-detector`; Dave는 PM2 현재 목록과 재부팅용 저장 목록에 없다. 3011 연결 실패와 `/dave-face/` 502는 대기 상태의 결과이며 재설치 근거가 아니다.
+- Dave Face `0.1.0` / `jetson`은 설치 완료·대기 상태다. 2026-11-03 조회 HEAD는 `26bfcdb`, 포팅 기준은 `d4dbdb1`이다. 기본 실행 서비스는 `oni-detector`; Dave는 PM2 현재 목록과 재부팅용 저장 목록에 없다. 3011 연결 실패와 `/dave-face/` 502는 대기 상태의 결과이며 재설치 근거가 아니다.
 - ONNX/ZIP 해시 4개, FP16 엔진 2개, 웹 빌드, 가상환경을 확인했다. 등록 임베딩은 0개이므로 사용할 얼굴은 동의를 받고 `/admin`에서 등록한다. 관리자 토큰 값과 얼굴 데이터는 문서·보드에 복사하지 않는다.
 - 사용할 때는 먼저 `pm2 stop oni-detector` 후 이 저장소의 `deploy/ecosystem.config.cjs`로 Dave를 시작한다. 끝나면 `pm2 delete dave-face` 후 `pm2 start oni-detector`로 복원한다. `pm2 delete oni-detector`는 하지 않으며, Dave가 목록에 있는 동안 `pm2 save`를 실행하지 않는다. 전체 명령은 루트 `readme.md`와 통합 운영 문서에 있다.
 - 접속 호스트는 고정하지 않는다. MZOK 장치 `GB_jeton-nano-01`의 현재 주소 조회 절차는 통합 운영 문서를 따른다. 로컬 확인 위치는 `~/works/baro_tunnel/localfiles/keeper-out.log`다. 상대 경로 `/dave-face/`, `/dave-face/compare`, `/dave-face/admin`을 현재 HTTPS 주소에 붙인다.

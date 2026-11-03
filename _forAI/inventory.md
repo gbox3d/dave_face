@@ -13,7 +13,7 @@
 
 - Name: `dave_face` (브랜치 `jetson`)
 - Path: `/home/vcacore/works/dave_face`
-- Installed revision: `jetson` / `d4dbdb1`, version `0.1.0` (2026-11-03 확인).
+- Installed revision: `jetson`, 2026-11-03 조회 HEAD `26bfcdb` / 포팅 기준 `d4dbdb1`, version `0.1.0`.
 - Summary: Jetson Orin Nano 4GB + TensorRT 얼굴 인식 데모 모노레포. SCRFD-10G 검출(5점) → 112×112 Umeyama 정렬 → ArcFace MobileFaceNet 512-D → 코사인 유사도. 모델은 Hailo Model Zoo 의 원본 float ONNX 를 trtexec FP16 엔진으로 만든 것이라 `main`(Pi 5 + Hailo-10H)과 같은 가중치. 사진 한 장으로 등록하고, 프레임마다 유사도와 처리 시간(GPU·서버·왕복)을 보여 준다. 데모 두 화면은 브라우저에서 MediaPipe Face Mesh 를 그린다. 인증·보안 기능은 의도적으로 없다.
 
 ## Top-level structure
