@@ -2,6 +2,7 @@
 
 ## 목차
 
+- [인수인계 현황 (2026-11-03)](#인수인계-현황-2026-11-03)
 - [제품 기준선](#제품-기준선)
 - [기본 설정값](#기본-설정값)
 - [데이터 계약 (모델·엔진)](#데이터-계약-모델엔진)
@@ -10,6 +11,15 @@
 - [대안 조사 (2026-10-28)](#대안-조사-2026-10-28)
 - [동작 규칙](#동작-규칙)
 - [반복 금지](#반복-금지)
+
+## 인수인계 현황 (2026-11-03)
+
+- 흥의 통합 운영 문서: [나노 보드 AI 서비스 인수인계](../../system_info/handover-nano-ai-20261103.md).
+- Dave Face `0.1.0` / `jetson` / `d4dbdb1`은 설치 완료·대기 상태다. 기본 실행 서비스는 `oni-detector`; Dave는 PM2 현재 목록과 재부팅용 저장 목록에 없다. 3011 연결 실패와 `/dave-face/` 502는 대기 상태의 결과이며 재설치 근거가 아니다.
+- ONNX/ZIP 해시 4개, FP16 엔진 2개, 웹 빌드, 가상환경을 확인했다. 등록 임베딩은 0개이므로 사용할 얼굴은 동의를 받고 `/admin`에서 등록한다. 관리자 토큰 값과 얼굴 데이터는 문서·보드에 복사하지 않는다.
+- 사용할 때는 먼저 `pm2 stop oni-detector` 후 이 저장소의 `deploy/ecosystem.config.cjs`로 Dave를 시작한다. 끝나면 `pm2 delete dave-face` 후 `pm2 start oni-detector`로 복원한다. `pm2 delete oni-detector`는 하지 않으며, Dave가 목록에 있는 동안 `pm2 save`를 실행하지 않는다. 전체 명령은 루트 `readme.md`와 통합 운영 문서에 있다.
+- 접속 호스트는 고정하지 않는다. MZOK 장치 `GB_jeton-nano-01`의 현재 주소 조회 절차는 통합 운영 문서를 따른다. 로컬 확인 위치는 `~/works/baro_tunnel/localfiles/keeper-out.log`다. 상대 경로 `/dave-face/`, `/dave-face/compare`, `/dave-face/admin`을 현재 HTTPS 주소에 붙인다.
+- 아래 성능 및 44개 테스트 통과 수치는 **2026-10-29 기록**이다. 11월 3일에는 문서 정리와 읽기 전용 상태 확인만 수행했고, 서비스 전환·빌드·GPU 벤치마크는 실행하지 않았다.
 
 ## 제품 기준선
 
@@ -57,13 +67,15 @@
 
 ## 호스트·운영 메모 (ABP301)
 
-- **GPU 공유**: `oni-detector`(pm2, torch+onnxruntime, 127.0.0.1:9082)가 nvmap GPU 메모리 ≈2 GB(스왑 불가)를 쥔다. dave-face(워커 RSS 0.4~0.8 GB + GPU)와 동시 실행 불가. `run-web.sh` 가 `:9082` 가 열려 있으면 기동을 거부한다. 전환: `pm2 stop oni-detector` ↔ `pm2 delete dave-face && pm2 start oni-detector`. `pm2 delete oni-detector` 금지(stop 만).
+- **GPU 공유**: `oni-detector`(pm2, oni_detector 1.5.0, torch 2.3.0 NVIDIA 휠 + onnxruntime, `~/works/_ai_works/oni_detector-1.5.0-5c5c11d`, `.venv-jetson`, 설치 문서 `docs/INSTALL-JETSON.md`)가 혼자 돌 때 nvmap GPU 메모리 1.42 GB(스왑 불가) + VmSwap 1.2 GB, 보드 MemAvailable ≈290 MB(2026-11-03 실측). oni 는 `.env` `ONI_HOST=0.0.0.0` 이라 `0.0.0.0:9082` 로 듣는다(oni 소관, 바꾸지 않음). dave-face(워커 RSS 0.4~0.8 GB + GPU)와 동시 실행 불가. `run-web.sh` 가 `:9082` 가 열려 있으면 기동을 거부한다. 전환: `pm2 stop oni-detector` ↔ `pm2 delete dave-face && pm2 start oni-detector`. `pm2 delete oni-detector` 금지(stop 만).
 - **pm2 데몬은 `pm2-vcacore.service`(system.slice)에서 돈다**(2026-10-29 이동, drop-in `OOMPolicy=continue`). 그 전에는 VS Code 터널 cgroup(`code-tunnel.service`, OOMPolicy=stop)에 있어 OOM 1건이 pm2 전체·터널을 멈출 수 있었다. 에이전트 셸은 여전히 그 cgroup 이므로 무거운 작업은 `systemd-run --user --unit=… --collect --same-dir -p OOMPolicy=continue -p MemoryMax=… -- nice -n 10 choom -n 1000 <cmd>` 로 격리한다(유닛 PATH 에 `~/.local/bin` 없음 → 스크립트가 `uv` 절대 경로를 찾는다).
 - **`pm2 save` 는 dave-face 가 목록에 없을 때만.** PM2 7.1.1 `resurrect` 는 저장된 앱을 상태와 무관하게 띄우므로 두 GPU 앱이 부팅 때 같이 뜰 수 있다.
 - 엔진 빌드: trtexec 빌더 라이브러리 고정비 ≈1–2 GB → 가용 메모리 1.5 GB 게이트, mbf → scrfd 순차, 로그 `localfiles/logs/trt-build-*.log`. OOM 진단은 `journalctl -k -b | grep -iE 'oom-kill|killed process'`(sudo 불필요, adm 그룹).
 - nginx: `sites-available/default` 에 include 한 줄, 변경은 백업 → `sudo nginx -t` → `sudo systemctl reload nginx`(restart 금지, 실패하면 전 서비스가 내려간다). 저장소 이동/삭제 전에 include 제거.
 - 폰 접속: HTTPS 터널만 카메라 가능. 주소는 keeper 로그(MZOK `GB_jeton-nano-01`), KT 계열 DNS 는 `*.trycloudflare.com` NXDOMAIN 가능. LAN http 는 curl 테스트 전용.
-- 바로메모(team-n) #1780 이 이번 포팅의 작업 글(시작/결과).
+- 터널 주소는 `baro-tunnel-auto` 가 재시작할 때마다 바뀐다 — 2026-10-29 pm2 데몬 이동 때 한 번 바뀌어 "WorkGate 터널 주소가 안 들어간다" 문의가 있었다(터널·`/gate/` 는 정상, 옛 주소였다). MZOK 레지스트리는 keeper 가 자동 갱신한다. MZOK 공개 중계 `GET /go/<id>/...` 는 **503 `relay_unconfigured`**(2026-11-03, 레지스트리의 모든 기기 공통 — Worker 운영자가 `MZOK_RELAY_POLICIES` 를 넣어야 동작), 레지스트리 조회 `/v1/devices/<id>` 는 토큰 필요 → 로컬에서는 keeper 로그를 쓴다.
+- Git: 이 보드에는 GitHub 자격증명이 없다(gh·SSH 키·credential helper 없음, `git push` → `could not read Username`). `jetson` 브랜치 push 는 자격증명이 있는 곳에서 한다.
+- 바로메모(team-n) #1780 이 이번 포팅의 작업 글(시작/결과). **#1797 이 이 보드의 허브**(oni-detector 와 dave-face 공유 규칙·실측·미결 항목, 댓글로 갱신).
 
 ## 대안 조사 (2026-10-28)
 
@@ -94,3 +106,4 @@
 - Vite 엔트리를 컴포넌트와 대소문자만 다른 이름으로 만들지 말 것(`admin.tsx` vs `Admin.tsx` → TS1149). 페이지 경로 끝에 `/` 를 붙이지 말 것(`/admin/` 은 404 로 둔다).
 - 백그라운드 점검 스크립트는 `sys.stdout.reconfigure(line_buffering=True)`. nginx reload 직후 첫 요청은 옛 워커로 갈 수 있다 — 한 번 더 확인. iOS Safari 는 화면 전환 때 fetch 를 끊는다("Load failed") — `pageshow` persisted 때 오류를 지운다. fps 는 마지막 프레임 시각으로.
 - 터널 호스트·관리자 토큰·`#t=` URL 을 문서·보드·채팅에 적지 말 것.
+- 폰에서 주소가 안 열린다고 터널(`baro-tunnel-auto`)이나 pm2 데몬을 재시작하지 말 것 — 주소가 또 바뀐다. 먼저 keeper 로그의 최신 주소로 `/gate/` 가 200 인지 본다.

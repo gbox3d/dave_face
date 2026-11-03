@@ -9,10 +9,13 @@
 
 ## Current goal
 
+- 2026-11-03: 설치·포팅 검증을 마친 Dave Face를 흥이 Oni와 교대로 사용할 수 있도록 인계한다. 현재 Dave는 대기 중이고 Oni가 실행 중이다. 첫 실행은 [나노 보드 AI 서비스 인수인계](../../system_info/handover-nano-ai-20261103.md)의 전환 순서를 따른다.
 - Jetson Orin Nano 4GB(ABP301)에서 Pi 와 같은 모델로 얼굴 인식 데모를 안정적으로 보여 준다(인식 테스트 · 사진 비교 · 등록 + Face Mesh 연출). `main`(Pi/Hailo)과 수치를 나란히 비교한다.
 
 ## Near-term work
 
+- `jetson` 브랜치 push — 자격증명이 있는 곳에서 `git push -u origin jetson`(2026-11-03 기준 origin 에 없음, 이 보드에서는 불가).
+- 인수자가 사용할 때: 현재 HTTPS 주소를 조회하고 Oni를 정지한 뒤 Dave를 기동하여 health `ready`를 확인한다. 동의한 얼굴을 등록하고 데모를 사용한 후 Dave를 PM2 목록에서 제거하고 Oni를 복원한다. 이 문서 정리에서는 전환 시험을 수행하지 않았다.
 - 폰(iPhone Safari) 실사용: 메시 오버레이가 카메라 위에 맞게 그려지는지(미러·cover 정렬), 첫 로드 시간(WASM ≈11 MB), GPU 델리게이트 실패 시 CPU 폴백 동작 확인.
 - `MATCH_THRESHOLD`(0.5) 를 FP16 엔진 기준으로 재검증 — 같은 사람·다른 사람 분포를 `/compare` 로 보고 정한다. 이 보드 DB 는 비어 있으니 `/admin` 재등록.
 - 측정 보강: 콜드 스타트(30 s 이상 유휴 뒤 첫 요청 — GPU 클럭 306 MHz 유휴·스왑) 수치를 readme 에 추가.

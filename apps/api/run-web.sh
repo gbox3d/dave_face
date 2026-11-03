@@ -15,7 +15,7 @@ for name in scrfd_10g arcface_mobilefacenet; do
 done
 # GPU 인터락: 4 GB 보드에서 oni-detector(127.0.0.1:9082)와 동시에 돌릴 수 없다 — 먼저 pm2 stop oni-detector.
 if ss -H -ltn 'sport = :9082' | grep -q .; then
-    echo "oni-detector holds the GPU (127.0.0.1:9082 listening) — pm2 stop oni-detector first" >&2
+    echo "oni-detector holds the GPU (:9082 listening) — pm2 stop oni-detector first" >&2
     exit 2
 fi
 PORT="${DAVE_FACE_PORT:-3011}"

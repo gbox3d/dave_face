@@ -13,6 +13,7 @@
 
 - Name: `dave_face` (브랜치 `jetson`)
 - Path: `/home/vcacore/works/dave_face`
+- Installed revision: `jetson` / `d4dbdb1`, version `0.1.0` (2026-11-03 확인).
 - Summary: Jetson Orin Nano 4GB + TensorRT 얼굴 인식 데모 모노레포. SCRFD-10G 검출(5점) → 112×112 Umeyama 정렬 → ArcFace MobileFaceNet 512-D → 코사인 유사도. 모델은 Hailo Model Zoo 의 원본 float ONNX 를 trtexec FP16 엔진으로 만든 것이라 `main`(Pi 5 + Hailo-10H)과 같은 가중치. 사진 한 장으로 등록하고, 프레임마다 유사도와 처리 시간(GPU·서버·왕복)을 보여 준다. 데모 두 화면은 브라우저에서 MediaPipe Face Mesh 를 그린다. 인증·보안 기능은 의도적으로 없다.
 
 ## Top-level structure
@@ -61,12 +62,14 @@ apps/api/.venv/bin/python scripts/bench-npu.py   # 서비스를 내린 뒤 — �
 
 ## Tests
 
+- 2026-11-03 인수인계 조회: ONNX/ZIP `SHA256SUMS` 4개 일치, TensorRT FP16 엔진 2개·웹 빌드·가상환경 존재, DB 등록 임베딩 0개, DB·관리자 토큰 권한 0600 확인. Dave는 PM2 목록·저장 목록에 없고 3011은 닫혀 있으며 nginx `/dave-face/`는 502다. Oni 실행을 유지한 조회이므로 새 GPU 성능 측정이나 기동 시험으로 해석하지 않는다.
 - `pnpm test` 통과 (2026-10-29): API unittest 44건(`test_scrfd`, `test_pipeline`, `test_db`, `test_engine`, `test_web`, `test_version_sync`) + tsc + vite build. GPU 를 여는 테스트는 없다 (StubEngine·FakeNPU 주입; `test_engine` 이 `tensorrt`/`cuda`/`hailo_platform` 미import 를 단언).
 - 실제 GPU 확인은 수동: `scripts/bench-npu.py`(서비스 내린 뒤) 또는 서비스가 뜬 상태에서 `/api/embed`·`/api/recognize` 에 샘플 JPEG(`/usr/share/opencv4/samples/data/lena.jpg`, `localfiles/samples/`).
 - 폰 화면(메시 포함)은 자동 테스트가 없다 — iPhone Safari 에서 수동 확인.
 
 ## Notes
 
+- 현재 교대 운영과 흥의 첫 실행 절차는 [나노 보드 AI 서비스 인수인계](../../system_info/handover-nano-ai-20261103.md)를 따른다. WorkGate의 `dave-face` 등록은 유지되어 있지만 대기 중에는 헬스가 실패하는 것이 정상이다.
 - Python 의존성은 uv 로만, venv 는 `/usr/bin/python3`(3.10) + `--system-site-packages`(시스템 tensorrt 8.6.2·cv2 4.8·numpy 1.21.5·Pillow). `cuda-python==12.2.*` 는 import 때 `cython` 이 필요해 함께 설치한다(numpy 를 끌어오지 않는다).
 - 웹은 빌드에 호스트 값을 박지 않는다(`base: "./"`, API 는 `new URL("api", document.baseURI)`, 메시 자산도 `assets/mediapipe/` 상대 경로). nginx 접두사 뒤와 :3011 직접 둘 다 동작한다.
 - 버전 문자열 4곳은 `test_version_sync` 가 지킨다 (3.10 에서는 `tomli` 폴백).
